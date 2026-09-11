@@ -1,3 +1,4 @@
+
 from flask import Flask, request, jsonify
 import os, requests, tempfile
 from gtts import gTTS
@@ -9,53 +10,47 @@ PHONE_NUMBER_ID = os.getenv("PHONE_NUMBER_ID", "1297192166806568")
 
 @app.route('/')
 def home():
-    return "Bot is Live! Phone ID 1297192166806568", 200
+    return "Bot Live 1297192166806568"
 
 @app.route('/webhook', methods=['GET'])
 def verify():
-    mode = request.args.get("hub.mode")
-    token = request.args.get("hub.verify_token")
-    challenge = request.args.get("hub.challenge")
-    if mode == "subscribe" and token == VERIFY_TOKEN:
-        return challenge, 200
-    return "Verification failed", 403
+    if request.args.get("hub.verify_token") == VERIFY_TOKEN:
+        return request.args.get("hub.challenge")
+    return "fail", 403
 
 @app.route('/webhook', methods=['POST'])
 def webhook():
     data = request.get_json()
     print(data)
     try:
-        entry = data['entry'][0]['changes'][0]['value']
-        if 'messages' in entry:
-            msg = entry['messages'][0]
-            from_number = msg['from']
+        val = data['entry'][0]['changes'][0]['value']
+        if 'messages' in val:
+            msg = val['messages'][0]
+            frm = msg['from']
             if msg['type'] == 'audio':
-                media_id = msg['audio']['id']
-                headers = {"Authorization": f"Bearer {WHATSAPP_TOKEN}"}
-                url = f"https://graph.facebook.com/v20.0/{media_id}"
-                resp = requests.get(url, headers=headers).json()
-                audio_url = resp.get('url')
-                audio_data = requests.get(audio_url, headers=headers).content
-                with tempfile.NamedTemporaryFile(delete=False, suffix=".ogg") as tmp:
-                    tmp.write(audio_data)
-                    tmp_path = tmp.name
-                text = "Ha ha Uncle Hloni I got your voice note This is your funny TTS bot reply"
-                tts = gTTS(text=text, lang='en', tld='com.au')
-                with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as mp3:
-                    tts.save(mp3.name)
-                    mp3_path = mp3.name
-                upload_url = f"https://graph.facebook.com/v20.0/{PHONE_NUMBER_ID}/media"
-                with open(mp3_path, 'rb') as f:
-                    files = {'file': ('fun.mp3', f, 'audio/mpeg')}
-                    data_form = {'type': 'audio/mpeg', 'messaging_product': 'whatsapp'}
-                    upload = requests.post(upload_url, headers=headers, files=files, data=data_form).json()
-                media_id_reply = upload.get('id')
-                if media_id_reply:
-                    send_url = f"https://graph.facebook.com/v20.0/{PHONE_NUMBER_ID}/messages"
-                    payload = {"messaging_product": "whatsapp","to": from_number,"type": "audio","audio": {"id": media_id_reply}}
-                    requests.post(send_url, headers=headers, json=payload)
+                mid = msg['audio']['id']
+                h = {"Authorization": f"Bearer {WHATSAPP_TOKEN}"}
+                r = requests.get(f"https://graph.facebook.com/v20.0/{mid}", headers=h).json()
+                aurl = r.get('url')
+                adata = requests.get(aurl, headers=h).content
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".ogg") as t:
+                    t.write(adata)
+                tts = gTTS("Ha ha Uncle Hloni I got your voice note!", lang='en', tld='com.au')
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as m:
+                    tts.save(m.name)
+                    mpath = m.name
+                up_url = f"https://graph.facebook.com/v20.0/{PHONE_NUMBER_ID}/media"
+                with open(mpath, 'rb') as f:
+                    files = {'file': ('a.mp3', f, 'audio/mpeg')}
+                    d = {'type': 'audio/mpeg', 'messaging_product': 'whatsapp'}
+                    up = requests.post(up_url, headers=h, files=files, data=d).json()
+                nid = up.get('id')
+                if nid:
+                    s_url = f"https://graph.facebook.com/v20.0/{PHONE_NUMBER_ID}/messages"
+                    p = {"messaging_product": "whatsapp", "to": frm, "type": "audio", "audio": {"id": nid}}
+                    requests.post(s_url, headers=h, json=p)
     except Exception as e:
-        print(f"Error: {e}")
+        print(e)
     return jsonify({"status": "ok"}), 200
 
 if __name__ == "__main__":
