@@ -13,7 +13,7 @@ def ask_groq(q):
     try:
         headers = {"Authorization": f"Bearer {GROQ_KEY}", "Content-Type": "application/json"}
         payload = {
-            "model": "llama-3.1-8b-instant",
+            "model": "   llama-3.3-70b-versatile,
             "messages": [
                 {"role": "system", "content": "You are witty and funny. Reply in 2 short sentences max, under 40 words."},
                 {"role": "user", "content": q}
